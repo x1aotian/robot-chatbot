@@ -1,3 +1,8 @@
+Set up env:
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
 BE: python server/app.py
 
 FE: python -m http.server 8000

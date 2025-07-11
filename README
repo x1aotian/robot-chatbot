@@ -1,7 +1,13 @@
+Set up creditials:
+Copy paste your local .env to /.env
+
 Set up env:
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+
+To resolve whisper error:
+pip uninstall -y whisper && pip install git+https://github.com/openai/whisper.git
 
 BE: python server/app.py
 

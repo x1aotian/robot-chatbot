@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🗣️ Text-Voice Chatbot</title>
+</head>
+<body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
+
+  <h1>🎙️ Talk to the Chatbot</h1>
+
+  <label for="mode"><b>Choose a Mode:</b></label>
+  <select id="mode">
+    <option value="natural">🧠 Natural</option>
+    <option value="hybrid">🤖 Hybrid</option>
+    <option value="robotic">🔊 Robotic Gibberish</option>
+  </select>
+
+  <br><br>
+  <button id="recordBtn" style="padding: 10px 20px; font-size: 16px;">🎤 Start Recording</button>
+
+  <br><br>
+  <div id="status" style="margin-top: 20px; font-size: 18px;">
+    <i>Idle...</i>
+  </div>
+
+  <audio id="replyAudio" controls style="margin-top: 30px; display: none;"></audio>
+
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
+
+    document.getElementById("recordBtn").onclick = async () => {
+      const recordBtn = document.getElementById("recordBtn");
+      const statusText = document.getElementById("status");
+      const replyAudio = document.getElementById("replyAudio");
+
+      if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.onstart = () => {
+          audioChunks = [];
+          statusText.textContent = "🎙️ Recording... Speak now!";
+          recordBtn.textContent = "⏹ Stop Recording";
+        };
+
+        mediaRecorder.ondataavailable = event => {
+          audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          statusText.textContent = "🔄 Processing...";
+          recordBtn.textContent = "🎤 Start Recording";
+
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const formData = new FormData();
+          formData.append("audio", audioBlob);
+
+          const mode = document.getElementById("mode").value;
+          formData.append("mode", mode);
+
+          try {
+            console.log("Sending audio to server...");
+            const response = await fetch("http://localhost:5050/transcribe", {
+              method: "POST",
+              body: formData
+            });
+
+            if (!response.ok) {
+              throw new Error("Server error: " + response.statusText);
+            }
+
+            const result = await response.json();
+            console.log("Server responded:", result);
+
+            statusText.innerHTML = `
+              📝 <b>Transcription:</b> ${result.transcription}<br>
+              🤖 <b>GPT Response:</b> ${result.message}
+            `;
+
+              // replyAudio.src = `http://localhost:8000${result.audio_url}`;
+              replyAudio.src = "http://localhost:8000/responses/reply.mp3";
+              replyAudio.style.display = "block";
+              replyAudio.load();
+
+              try {
+                await replyAudio.play();
+              } catch (err) {
+                console.warn("Autoplay blocked:", err);
+              }
+
+
+          } catch (error) {
+            console.error("Failed to fetch:", error);
+            statusText.innerHTML = `<span style="color:red">❌ Error: ${error.message}</span>`;
+            replyAudio.style.display = "none";
+          }
+        };
+
+        mediaRecorder.start();
+      } else {
+        mediaRecorder.stop();
+      }
+    };
+  </script>
+
+</body>
+</html>

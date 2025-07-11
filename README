@@ -1,0 +1,5 @@
+BE: python server/app.py
+
+FE: python -m http.server 8000
+
+Open http://127.0.0.1:8000/public/
